@@ -52,7 +52,11 @@ int Compare(const struct sDate reference, const struct sDate autreDate){
 			if (reference.jour==autreDate.jour){
 				if (reference.heure==autreDate.heure){
 					if (reference.minute==autreDate.minute){
-						return 0;						
+						return 0;
+						#ifdef DEBOGAGE
+						fprintf(stderr,"Fichier %s, ligne %d : Compare : Date egale\n"
+									,__FILE__,__LINE__);
+						#endif			
 					}
 					if (reference.minute<autreDate.minute)return -1;
 					else return 1;				
@@ -67,9 +71,11 @@ int Compare(const struct sDate reference, const struct sDate autreDate){
 		else return 1;	
 	}
 	if (reference.annee<autreDate.annee)return -1;
-	else return 1;
-
-	return 0;
+	#ifdef DEBOGAGE
+	fprintf(stderr,"Fichier %s, ligne %d : Compare :  date 1 > date 2\n"
+									,__FILE__,__LINE__);
+	#endif
+	return 1;
 }
 
 int Appartient(const struct sDate date, const struct sDate debut, const struct sDate fin){
