@@ -1,7 +1,7 @@
 #ifndef __DATE_H__
 #define __DATE_H__
 
-#define DEBOGAGE
+#define DEBOGAGE // Supprimer le no pour avoir un programme plus verbeux
 
 #define TAILLE_CHAINE_DATE 13 + 1
 
