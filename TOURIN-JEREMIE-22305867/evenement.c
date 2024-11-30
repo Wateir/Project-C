@@ -101,3 +101,20 @@ struct sDate Fin(tEvenement evenement){
 
 	return retourner;	
 }
+
+void DetruitEvenement(tEvenement* pEvenement){
+	free((*pEvenement)->titre);
+	free(pEvenement);
+	pEvenement= NULL;
+}
+
+void AfficheEvenement(tEvenement evenement){
+	char chaine[TAILLE_CHAINE_DATE];
+	printf("%s ",evenement->titre);
+	printf(" du ");
+	YYYYMMDDTHHMM(chaine, evenement->Debut);
+	printf(" au ");
+	YYYYMMDDTHHMM(chaine, evenement->Debut);
+	printf("\n");
+		
+}

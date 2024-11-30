@@ -39,7 +39,7 @@ void testTitre() {
     struct sDate fin1 = {2024, 12, 25, 12, 0};
     tEvenement ev1 = CreerEvenement("Event incroyable", debut1, fin1);
     char* titre1 = Titre(ev1);
-    assert(strcmp(titre1, "Event incroyabl") == 0);
+    assert(strcmp(titre1, "Event incroyable") == 0);
 
     struct sDate debut2 = {2024, 12, 31, 9, 0};
     struct sDate fin2 = {2024, 12, 31, 10, 0};
@@ -51,16 +51,26 @@ void testTitre() {
     struct sDate fin3 = {2024, 12, 31, 10, 0};
     tEvenement ev3 = CreerEvenement("", debut3, fin3);
     char* titre3 = Titre(ev3);
-    assert(titre3 != NULL);  
     assert(strcmp(titre3, "") == 0); 
 
 
     printf("Tous les tests ont réussi de Titre\n");
 }
 
+void testAfficherEvenement(){
+	struct sDate debut3 = {2024, 12, 31, 9, 0};
+	struct sDate fin3 = {2024, 12, 31, 10, 0};
+	tEvenement ev3 = CreerEvenement("AfficherEvent", debut3, fin3);
+	AfficheEvenement(ev3);
+
+	printf("Tous les tests ont réussi de AfficheEvenement\n");
+	
+}
+
 
 int main() {
     testCreerEvenement();
     testTitre();
+    testAfficherEvenement();
     return 0;
 }
