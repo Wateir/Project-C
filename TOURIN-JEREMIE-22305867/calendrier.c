@@ -22,7 +22,9 @@ static tCalendrier CreerCalendrier(){
 	#endif
 	if (temp == NULL) {
 		return NULL;
-	}	
+	}
+	temp->pSuivant = NULL;
+	return temp;
 }
 
 // Retourne 0 si l'evenement nouveau est sur une periode differente, et que le titre est different

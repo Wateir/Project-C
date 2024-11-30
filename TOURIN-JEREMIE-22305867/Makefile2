@@ -10,17 +10,17 @@ $(EXE):$(OBJ)
 
 # Pour produire les fichiers objets
 
-testcalendrier.o:testcalendrier.c date.h evenement.h calendrier.h 
-	$(CC) $(CFLAGS) -c testevenement.c
+testcalendrier.o: testcalendrier.c date.h evenement.h calendrier.h
+	$(CC) $(CFLAGS) -c testcalendrier.c
 
-date.o:date.c date.h
+date.o: date.c date.h
 	$(CC) $(CFLAGS) -c date.c
 
-evenement.o:evenement.c evenement.h 
+evenement.o: evenement.c evenement.h
 	$(CC) $(CFLAGS) -c evenement.c
 
-calendrier.o:calendrier.c calendrier.h 	
-	$(CC) $(CFLAGS) -c evenement.c
+calendrier.o: calendrier.c calendrier.h
+	$(CC) $(CFLAGS) -c calendrier.c
 
 # Pour effacer les objets et les exécutables
 
