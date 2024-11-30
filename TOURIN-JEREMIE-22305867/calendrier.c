@@ -83,3 +83,11 @@ int AjouterEvenement(tCalendrier* pCalendrier, tEvenement evenement) {
     return 0;
 
 }
+
+tEvenement PremierEvenement(tCalendrier calendrier){
+	return calendrier->pEvenement;
+}
+
+tCalendrier SuiteDuCalendrier(tCalendrier calendrier){
+	return calendrier->pSuivant;
+}
