@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#define TAILLE_CALENDRIER_MAX 100
 
 struct sCalendrier {
 	tEvenement pEvenement ;
@@ -51,6 +52,12 @@ static int EstPossible (tEvenement nouveau, tEvenement ancien){
 	return 0;
 }
 
+static void LibererCalendrier(tCalendrier addr[],int NbTab){
+	for (int j=0;j<NbTab;j++){
+		free(addr[j]);
+	}
+}
+
 int AjouterEvenement(tCalendrier* pCalendrier, tEvenement evenement) {
     tCalendrier current = *pCalendrier;
 
@@ -90,4 +97,68 @@ tEvenement PremierEvenement(tCalendrier calendrier){
 
 tCalendrier SuiteDuCalendrier(tCalendrier calendrier){
 	return calendrier->pSuivant;
+}
+
+void DetruitCalendrier(tCalendrier* pCalendrier){
+    if (pCalendrier == NULL || *pCalendrier == NULL) {
+    	#ifdef DEBOGAGE
+    	fprintf(stderr, "Fichier %s, ligne %d : Calendrier donné est vide [DetruitCalendrier]\n", __FILE__, __LINE__);
+    	#endif
+        return; // Pas de calendrier à libérer
+    }
+    tCalendrier temp = *pCalendrier;
+    tCalendrier addr[TAILLE_CALENDRIER_MAX];
+    int i = 0;
+	while (temp!=NULL){
+		addr[i]=temp;
+		i++;
+	}
+	LibererCalendrier(addr,i);
+	*pCalendrier=NULL;
+	
+}
+
+void AfficheCalendrier(tCalendrier calendrier){
+	tCalendrier temp = calendrier;
+	while(temp!= NULL){
+		AfficheEvenement(temp->pEvenement);
+		temp = temp->pSuivant;
+	}
+}
+
+int SupprimeEvenementsPeriode(tCalendrier* pCalendrier, struct sDate debut, struct sDate fin){
+	tCalendrier temp = *pCalendrier,addr[TAILLE_CALENDRIER_MAX];
+	int i=0,flag=0,NbCal=0;  //Flag pour gerer l'update du pointeur
+	
+	while(temp!= NULL){
+		struct sDate debut2 = Debut(temp->pEvenement);
+		struct sDate fin2 = Fin(temp->pEvenement);
+		if (Chevauche(debut,fin,debut2,fin2)==1){
+			addr[i] = temp;
+			i++;
+			if (flag==1) pCalendrier = &temp;
+			if (temp==*pCalendrier) flag = 1;
+			
+		}
+		NbCal++;
+		temp = temp->pSuivant;
+	}
+	if (i==NbCal)*pCalendrier=NULL; // Le calendrier est vide
+	
+	LibererCalendrier(addr,i);
+	return i;
+}
+
+int ExportCalendrier(tCalendrier calendrier, const char* fichier){
+	FILE *fich=fopen(fichier, "wb");
+	  int i=0,max;
+	  tCalendrier pCon= calendrier;
+	  max=fwrite((pCon->pEvenement),sizeof(struct sEvenement),100,fich);
+	  while (max>i){
+	    fwrite((pCon->pEvenement),sizeof(struct sEvenement),max,fich);
+	    pCon=pCon->pSuivant;
+	    i++;
+	  }
+	  fclose(fich);
+	  return 0;
 }
