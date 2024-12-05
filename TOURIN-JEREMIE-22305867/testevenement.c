@@ -57,13 +57,73 @@ void testTitre() {
     printf("Tous les tests ont réussi de Titre\n");
 }
 
+void testDebut() {
+    // Test 1 
+    struct sDate debut1 = {2024, 12, 25, 10, 30};
+    struct sDate fin1 = {2024, 12, 25, 12, 0};
+    tEvenement ev1 = CreerEvenement("Event incroyable", debut1, fin1);
+    
+    struct sDate result1 = Debut(ev1);
+    
+    assert(Compare(result1,debut1)==0);
+    
+    // Test 2 
+    struct sDate debut2 = {2025, 1, 1, 9, 0};
+    struct sDate fin2 = {2025, 1, 1, 11, 0};
+    tEvenement ev2 = CreerEvenement("Nouvel An", debut2, fin2);
+
+    struct sDate result2 = Debut(ev2);
+    
+    assert(Compare(result2,debut2)==0);    
+    
+    // Test 3
+    struct sDate debut3 = {2023, 7, 4, 18, 45};
+    struct sDate fin3 = {2023, 7, 4, 20, 0};
+    tEvenement ev3 = CreerEvenement("BBQ Party", debut3, fin3);
+    
+    struct sDate result3 = Debut(ev3);
+    
+    assert(Compare(result3,debut3)==0);  
+    printf("Tous les tests ont réussi pour la Debut\n");
+}
+
+void testFin() {
+    // Test 1 
+    struct sDate debut1 = {2024, 12, 25, 10, 30};
+    struct sDate fin1 = {2024, 12, 25, 12, 0};
+    tEvenement ev1 = CreerEvenement("Event incroyable", debut1, fin1);
+    
+    struct sDate result1 = Fin(ev1);
+    
+    assert(Compare(result1,fin1)==0);
+    
+    // Test 2 
+    struct sDate debut2 = {2025, 1, 1, 9, 0};
+    struct sDate fin2 = {2025, 1, 1, 11, 0};
+    tEvenement ev2 = CreerEvenement("Nouvel An", debut2, fin2);
+
+    struct sDate result2 = Fin(ev2);
+    
+    assert(Compare(result2,fin2)==0);    
+    
+    // Test 3
+    struct sDate debut3 = {2023, 7, 4, 18, 45};
+    struct sDate fin3 = {2023, 7, 4, 20, 0};
+    tEvenement ev3 = CreerEvenement("BBQ Party", debut3, fin3);
+    
+    struct sDate result3 = Fin(ev3);
+    
+    assert(Compare(result3,fin3)==0);  
+    printf("Tous les tests ont réussi pour la fonction Debut !\n");
+}
+
 void testAfficherEvenement(){
 	struct sDate debut3 = {2024, 12, 31, 9, 0};
 	struct sDate fin3 = {2024, 12, 31, 10, 0};
 	tEvenement ev3 = CreerEvenement("AfficherEvent", debut3, fin3);
 	AfficheEvenement(ev3);
 
-	printf("Tous les tests ont réussi de AfficheEvenement\n");
+	printf("Tous les tests ont réussi de Fin\n");
 	
 }
 
@@ -71,6 +131,8 @@ void testAfficherEvenement(){
 int main() {
     testCreerEvenement();
     testTitre();
+    testDebut();
+    testFin();
     testAfficherEvenement();
     return 0;
 }
