@@ -151,11 +151,25 @@ int SupprimeEvenementsPeriode(tCalendrier* pCalendrier, struct sDate debut, stru
 
 int ExportCalendrier(tCalendrier calendrier, const char* fichier){
 	FILE *fich=fopen(fichier, "wb");
+	  if (fich == NULL) {
+	  		  #ifdef DEBOGAGE
+	  		  fprintf(stderr, "Fichier %s, ligne %d : Erreur d'ouverture du fichier [ExportCalendrier]\n", __FILE__, __LINE__);
+	  		  #endif
+	          return -1;  
+	   }
 	  int i=0,max;
 	  tCalendrier pCon= calendrier;
-	  max=fwrite((pCon->pEvenement),sizeof(struct sEvenement),100,fich);
+	  if (pCon == NULL) {
+	      fprintf(stderr, "Erreur : le calendrier est vide\n");
+	      #ifdef DEBOGAGE
+	      fprintf(stderr, "Fichier %s, ligne %d : Erreur : le calendrier est vide [ExportCalendrier]\n", __FILE__, __LINE__);
+	      #endif
+	      fclose(fich);
+	      return -1;
+	  }
+	  max=fwrite((pCon->pEvenement),sizeof(tEvenement),100,fich);
 	  while (max>i){
-	    fwrite((pCon->pEvenement),sizeof(struct sEvenement),max,fich);
+	    fwrite((pCon->pEvenement),sizeof(tEvenement),max,fich);
 	    pCon=pCon->pSuivant;
 	    i++;
 	  }

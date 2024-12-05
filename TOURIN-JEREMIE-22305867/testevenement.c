@@ -114,7 +114,7 @@ void testFin() {
     struct sDate result3 = Fin(ev3);
     
     assert(Compare(result3,fin3)==0);  
-    printf("Tous les tests ont réussi pour la fonction Debut !\n");
+    printf("Tous les tests ont réussi de Debut\n");
 }
 
 void testAfficherEvenement(){
