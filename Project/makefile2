@@ -1,0 +1,34 @@
+CC      = gcc
+CFLAGS  = -std=c11 -Wpedantic -Wall -Wextra -g
+LDLIBS  = -lm
+RM      = rm -f
+OBJ     = gerer_sf_v2.o inode.o sf.o
+EXE     = gerer_sf_v2
+
+
+
+# classique est definis pour que make -f makefile1 utilise CLFAG par defaut et non debug
+classique: CFLAG = CFLAG
+classique: all
+# debug augmente le nombre de printf qui seront fais, make -f makefile1 debug
+debug: CFLAGS += -DDEBUG
+debug: all
+# sanitize active les fsanitize, make -f makefile1 sanitize
+sanitize: CFLAGS += -fsanitize=undefined,address,leak
+sanitize: all
+all: $(EXE)
+
+$(EXE): $(OBJ)
+	$(CC) $(CFLAGS) $(OBJ) -o $(EXE) $(LDLIBS)
+
+gerer_sf_v2.o: gerer_sf_v2.c inode.h sf.h
+	$(CC) $(CFLAGS) -c gerer_sf_v2.c -o gerer_sf_v2.o
+
+inode.o: inode.c inode.h
+	$(CC) $(CFLAGS) -c inode.c -o inode.o
+
+sf.o: sf.c sf.h
+	$(CC) $(CFLAGS) -c sf.c -o sf.o
+
+clean:
+	$(RM) $(OBJ) $(EXE)
