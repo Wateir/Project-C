@@ -2,7 +2,7 @@
 #define __INODE_H__
 
 #include <time.h>
-
+#include <stdio.h>
 # define NB_BLOCS_DIRECTS 10 //Nombre maximum de blocs directs dans un inode
 # define TAILLE_BLOC 64 //Taille d’un bloc en octets
 
@@ -41,6 +41,12 @@ extern long EcrireContenuBloc(tBloc bloc, unsigned char *contenu, long taille);
 //Copie à l’adresse contenu les taille octets stockés dans le bloc bloc, passé en paramètre
 extern long LireContenuBloc(tBloc bloc, unsigned char *contenu, long taille);
 
+//Sauvegarde les données du bloc paramètre
+extern int SauvegarderBloc(tBloc bloc, long taille, FILE *fichier);
+
+//Charge, dans le paramètre bloc, les données lues depuis le fichier
+extern int ChargerBloc(tBloc bloc, long taille, FILE *fichier);
+
 //Crée et retourne un inode à partir des informations données en paramètre : un numéro d’inode (numInode) et la nature du fichier associé à cet inode (type)
 extern tInode CreerInode(unsigned int numInode, natureFichier type);
 
@@ -73,4 +79,16 @@ extern long EcrireDonneesInode1bloc(tInode inode, unsigned char *contenu, long t
 
 //Copie à l’adresse contenu les taille octets stockés dans l’inode (inode), passé en paramètre
 extern long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille);
+
+//Ecrit au plus taille octets de contenu dans l’inode inode.
+extern long EcrireDonneesInode(tInode inode, unsigned char *contenu, long taille, long decalage);
+
+//Lit au plus taille octets de données de l’inode inode
+extern long LireDonneesInode(tInode inode, unsigned char *contenu, long taille, long decalage);
+
+//Sauvegarde toutes les informations que contient un inode dans un fichier
+extern int SauvegarderInode(tInode inode, FILE *fichier);
+
+//charge un inode depuis un fichier d’identificateur fichier.
+extern int ChargerInode(tInode *pInode, FILE *fichier);
 #endif

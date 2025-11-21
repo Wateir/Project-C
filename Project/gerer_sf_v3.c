@@ -1,10 +1,10 @@
 #include "macro.h"
-#include "sf.h"
 
 #include <stdio.h>
 
 #include "test_sf_v1.h"
 #include "test_sf_v2.h"
+#include "test_sf_v3.h"
 
 
 int main(void){
@@ -16,11 +16,14 @@ int main(void){
 
     printf("Lancement de La batterie de test ....\n");
 
-    printf("Test des fonctions bloc [1/3]...\n");
+    printf("Test des fonctions bloc [1/4]...\n");
     TEST(TestCreerBloc, adresseBloc, "sanatize");
     TEST(TestDetruireBloc, adresseBloc, "sanatize");
     TEST(TestEcrireContenuBloc, string, "debug");
     TEST(TestLireContenuBloc, string, "debug");
+
+    TEST(TestSauvegarderBloc,,"debug");
+    TEST(TestChargerBloc,,"debug");
 
     printf("Test des fonctions inode [2/3]...\n");
 
@@ -34,15 +37,24 @@ int main(void){
     TEST(TestType, adresseTest, "debug");
     TEST(TestTaille, adresseTest, "debug");
 
-    //TEST(TestAfficherInode,, "debug");
+    TEST(TestAfficherInode,, "debug");
     TEST(TestEcrireDonneesInode1bloc,, "debug");
     TEST(TestLireDonneesInode1bloc,, "debug");
+
+    TEST(TestEcrireDonneesInode,,"debug");
+    TEST(TestLireDonneesInode,,"debug");
+    TEST(TestSauvegarderInode,,"debug");
+    TEST(TestChargerInode,,"debug");
 
     printf("Test des fonctions Systeme Fichier [3/3]...\n");
 
     TEST(TestCreerSF, adresseSF, "sanatize");
     TEST(TestDetruireSF, adresseSF, "sanatize");
     //TEST(TestAfficherSF,, "debug");
+
+    TEST(TestEcrireFichierSF,,"debug");
+    TEST(TestSauvegarderSF,,"debug");
+    TEST(TestChargerSF,,"debug");
 
     printf("Tout les tests sont passé avec succes ....\n");
     return 0;

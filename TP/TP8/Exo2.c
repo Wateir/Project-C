@@ -64,5 +64,5 @@ int main(void){
     int val = 0;
     // testMatriceH();
     val = testImageH();
-    return val;
+   NbLig = ImNbLig(feep); return val;
 }

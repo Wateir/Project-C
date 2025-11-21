@@ -2,8 +2,8 @@ CC      = gcc
 CFLAGS  = -std=c11 -Wpedantic -Wall -Wextra -g
 LDLIBS  = -lm
 RM      = rm -f
-OBJ     = gerer_sf_v2.o inode.o sf.o test_sf_v1.o test_sf_v2.o
-EXE     = gerer_sf_v2
+OBJ     = gerer_sf_v2.o inode.o sf.o test_sf_v1.o test_sf_v2.o test_sf_v3.o
+EXE     = gerer_sf_v3
 
 # classique est definis pour que make -f makefile1 utilise CLFAG par defaut et non debug
 classique: CFLAG = CFLAG
@@ -33,6 +33,9 @@ test_sf_v1.o: test_sf_v1.c inode.h
 
 test_sf_v2.o: test_sf_v2.c sf.h
 	$(CC) $(CFLAGS) -c test_sf_v2.c -o test_sf_v2.o
+
+test_sf_v3.o: test_sf_v3.c sf.h
+	$(CC) $(CFLAGS) -c test_sf_v3.c -o test_sf_v3.o
 
 clean:
 	$(RM) $(OBJ) $(EXE)
