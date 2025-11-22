@@ -1,6 +1,8 @@
 #ifndef __TEST_SF_V3_H__
 #define __TEST_SF_V3_H__
 
+#define CHEMIN_ACCES "./Fichier/"
+
 extern int TestSauvegarderBloc(void);
 
 extern int TestChargerBloc(void);

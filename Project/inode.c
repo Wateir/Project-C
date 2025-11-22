@@ -60,7 +60,7 @@ int SauvegarderBloc(tBloc bloc, long taille, FILE *fichier){
         valRetour =  putc(bloc[i], fichier);
         if (valRetour == EOF){
             #if DEBUG
-            fprintf(stderr," SauvegarderBlo : l'ecriture a echoué");
+            fprintf(stderr," SauvegarderBloc : l'ecriture a echoué");
             #endif
             return -1;
         }
@@ -77,9 +77,9 @@ int ChargerBloc(tBloc bloc, long taille, FILE *fichier){
         valRetour = getc(fichier);
         if (valRetour == EOF){
             #ifdef DEBUG
-            fprintf(stderr,"ChargerBloc : la lecture à loupé\n");
+            fprintf(stderr,"ChargerBloc : la lecture à loupé au %dime caractère\n",i);
             #endif
-            printf("vide");
+            printf("vide\n");
             return -1;
         }
         else{

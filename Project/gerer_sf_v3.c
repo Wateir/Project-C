@@ -16,7 +16,7 @@ int main(void){
 
     printf("Lancement de La batterie de test ....\n");
 
-    printf("Test des fonctions bloc [1/4]...\n");
+    printf("Test des fonctions bloc [1/3]...\n");
     TEST(TestCreerBloc, adresseBloc, "sanatize");
     TEST(TestDetruireBloc, adresseBloc, "sanatize");
     TEST(TestEcrireContenuBloc, string, "debug");
@@ -50,7 +50,7 @@ int main(void){
 
     TEST(TestCreerSF, adresseSF, "sanatize");
     TEST(TestDetruireSF, adresseSF, "sanatize");
-    //TEST(TestAfficherSF,, "debug");
+    TEST(TestAfficherSF,, "debug");
 
     TEST(TestEcrireFichierSF,,"debug");
     TEST(TestSauvegarderSF,,"debug");
