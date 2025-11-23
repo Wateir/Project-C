@@ -12,7 +12,7 @@ classique: all
 debug: CFLAGS += -DDEBUG
 debug: all
 # sanitize active les fsanitize, make -f makefile1 sanitize
-sanitize: CFAGS += -fsanitize=undefined,address,leak
+sanitize: CFLAGS += -fsanitize=undefined,address,leak
 sanitize: all
 all: $(EXE)
 

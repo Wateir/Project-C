@@ -35,11 +35,11 @@ long EcrireContenuBloc(tBloc bloc, unsigned char *contenu, long taille){
 //Reimplementation de EcrireContenuBloc permetant un decallage
 static long ReEcrireContenuBloc(tBloc bloc,const unsigned char *contenu,const long taille,const long decallage){
     TEST_EXISTANCE(bloc,"EcrireContenuBloc","le bloc n'existe pas",-1)
-    int i;
+    long i;
     for (i=decallage;i<taille && i<TAILLE_BLOC;i++){
         bloc[i] = contenu[i];
     }
-    return (long) i;
+    return i - decallage;
 }
 
 long LireContenuBloc(tBloc bloc, unsigned char *contenu, long taille){
@@ -102,7 +102,8 @@ tInode CreerInode(unsigned int numInode, natureFichier type){
         fprintf(stderr," CreerInode : probleme creation");
         return NULL;
     }
-    BlocDonnees(inode)[0]= NULL; // on initialise a NULL pour etre sur que si c'est pas changer, Detruire vera la non initialisation
+    for(int i=0;i<NB_BLOCS_DIRECTS;i++) BlocDonnees(inode)[i]= NULL;
+    // on initialise a NULL pour etre sur que si c'est pas changer, Detruire vera la non initialisation
     inode->numero = numInode;
     inode->type = type;
     inode->dateDerModifInode = time(NULL);
@@ -111,8 +112,10 @@ tInode CreerInode(unsigned int numInode, natureFichier type){
 }
 
 void DetruireInode(tInode* pInode){
-    if ((*pInode)->blocDonnees[0] != NULL){
-        free((*pInode)->blocDonnees[0]);
+    for (int i=0;i<NB_BLOCS_DIRECTS;i++){
+    if ((*pInode)->blocDonnees[i] != NULL){
+        free((*pInode)->blocDonnees[i]);
+    }
     }
     free(*pInode);
     *pInode = NULL;
@@ -167,13 +170,20 @@ void AfficherInode(tInode inode){
         #ifdef DEBUG
         fprintf(stderr,"AfficherInode : inode->blocDonnees[0] est vide\n");
         #endif
-        printf("vide");
+        printf("vide\n");
         return;
     }
     if (BlocDonnees(inode)[0]==NULL){
         #ifdef DEBUG
         fprintf(stderr,"AfficherInode : inode->blocDonnees[0] est vide\n");
         #endif
+        return;
+    }
+    if (Taille(inode)<0){
+        #ifdef DEBUG
+        fprintf(stderr,"AfficherInode : taille negative : %ld\n",Taille(inode));
+        #endif
+        printf("vide\n");
         return;
     }
     printf("-----Inode-----[%d]\n",Numero(inode));
@@ -187,10 +197,17 @@ void AfficherInode(tInode inode){
     date = DateDerModifFichier(inode);
     printf("\tdate dernier modification inode : %s",ctime(&date));
 
-    printf("\tDonnées :\n");
-    for (int i=0;BlocDonnees(inode)[i]!=NULL;i++){
-        printf("%s\n",BlocDonnees(inode)[i]);
+    long resteALire = Taille(inode);
+    for (int i = 0; i < NB_BLOCS_DIRECTS; i++) {
+        if (BlocDonnees(inode)[i] != NULL) {
+            for (int j = 0; j < TAILLE_BLOC && resteALire > 0; j++) {
+                putchar(BlocDonnees(inode)[i][j]);
+                resteALire--;
+            }
+        }
     }
+    printf("\n");
+
     inode->dateDerAcces = time(NULL);
 }
 
@@ -236,56 +253,53 @@ long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille){
     return LireContenuBloc(BlocDonnees(inode)[0], contenu, taille);
 }
 
-//Retourne la chaine de charactère amputé de (debutDecoupage) caractère
-static unsigned char* CouperChaine(unsigned char string[],int debutDecoupage,long taille){
-    unsigned char* copyCouper = malloc(taille* sizeof(char));
-    if (copyCouper == NULL){
-        #ifdef DEBUG
-        fprintf(stderr,"CouperChaine : allocation à loupé\n");
-        #endif
-        return NULL;
-    }
-    int j=0;
-    for(int i = debutDecoupage;i<taille;i++){
-        copyCouper[j]=string[i];
-        j++;
-    }
-    return copyCouper;
-}
-
-long EcrireDonneesInode(tInode inode, unsigned char *contenu, long taille, long decalage){
+long EcrireDonneesInode(tInode inode, unsigned char *contenu, long taille, long decalage) {
     if (inode == NULL || contenu == NULL || taille < 0) {
         #ifdef DEBUG
-        fprintf(stderr,"EcrireDonneesInodebloc : paramètres invalides\n");
+        fprintf(stderr,"EcrireDonneesInode : paramètres invalides\n");
         #endif
         return -1;
     }
     long resteEcrire = taille;
-    long resteDecallage = decalage;
-    int i;
-    for(i=0;BlocDonnees(inode)[i]!=NULL&&i<NB_BLOCS_DIRECTS;i++){
-        if (BlocDonnees(inode)[i] == NULL){
-            BlocDonnees(inode)[i] = CreerBloc();
-            if (BlocDonnees(inode)[i]==NULL){
+    long iDecalage = decalage;
+    int i = iDecalage / TAILLE_BLOC;
+    long posDansBloc = iDecalage % TAILLE_BLOC;
+
+    while (i < NB_BLOCS_DIRECTS && resteEcrire > 0) {
+        if (inode->blocDonnees[i] == NULL) {
+            inode->blocDonnees[i] = CreerBloc();
+            if (inode->blocDonnees[i] == NULL) {
                 #ifdef DEBUG
-                fprintf(stderr,"EcrireDonneesInodebloc : allocation à loupé\n");
+                fprintf(stderr,"EcrireDonneesInode : échec allocation bloc\n");
                 #endif
-                return -1;
+                return (inode->taille = taille - resteEcrire);
             }
         }
-        if (resteDecallage>= TAILLE_BLOC){
-            resteDecallage -= TAILLE_BLOC;
+        long espaceBloc = TAILLE_BLOC - posDansBloc;
+        long aEcrire;
+        if (resteEcrire < espaceBloc) {
+            aEcrire = resteEcrire;
+        } else {
+            aEcrire = espaceBloc;
         }
-        else{
-            resteEcrire -= ReEcrireContenuBloc(BlocDonnees(inode)[i],CouperChaine(contenu,taille-resteEcrire,resteEcrire),resteEcrire,resteDecallage);
-        }
+
+        long ecrit = ReEcrireContenuBloc(inode->blocDonnees[i],contenu+ (taille- resteEcrire), aEcrire,posDansBloc);
+        if (ecrit < 0) return (inode->taille = taille - resteEcrire);
+        resteEcrire -= ecrit;
+        posDansBloc = 0;
+        i++;
     }
-    //On s'assure que le dernier bloc non ecris est initialisé à NULL
-    if (i<NB_BLOCS_DIRECTS+1) inode->blocDonnees[i+1] = NULL;
+
     inode->dateDerModif = time(NULL);
     inode->dateDerAcces = time(NULL);
-    return taille-resteEcrire;
+    return (inode->taille = taille - resteEcrire);
 }
+
+long LireDonneesInode(tInode inode, unsigned char *contenu, long taille, long decalage){
+
+    inode->dateDerAcces = time(NULL);
+}
+
 
 int SauvegarderInode(tInode inode, FILE *fichier){
     TEST_EXISTANCE(fichier,"SauvegarderInode","le fichier n'existe pas",-1)
