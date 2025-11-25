@@ -2,7 +2,7 @@ CC      = gcc
 CFLAGS  = -std=c11 -Wpedantic -Wall -Wextra -g
 LDLIBS  = -lm
 RM      = rm -f
-OBJ     = gerer_sf_v3.o inode.o sf.o test_sf_v1.o test_sf_v2.o test_sf_v3.o
+OBJ     = gerer_sf_v3.o inode.o sf.o test_sf_v1.o test_sf_v2.o test_sf_v3.o standard.o
 EXE     = gerer_sf_v3
 
 # classique est definis pour que make -f makefile1 utilise CLFAG par defaut et non debug
@@ -28,13 +28,16 @@ inode.o: inode.c inode.h
 sf.o: sf.c sf.h
 	$(CC) $(CFLAGS) -c sf.c -o sf.o
 
-test_sf_v1.o: test_sf_v1.c inode.h test_sf_v1.h
+standard.0: standard.c standard.h
+	$(CC) $(CFLAGS) -c standard.c -o string.o
+
+test_sf_v1.o: test_sf_v1.c inode.h macro.h test_sf_v1.h
 	$(CC) $(CFLAGS) -c test_sf_v1.c -o test_sf_v1.o
 
-test_sf_v2.o: test_sf_v2.c sf.h test_sf_v2.h test_sf_v1.h
+test_sf_v2.o: test_sf_v2.c sf.h macro.h test_sf_v2.h test_sf_v1.h
 	$(CC) $(CFLAGS) -c test_sf_v2.c -o test_sf_v2.o
 
-test_sf_v3.o: test_sf_v3.c sf.h test_sf_v2.h test_sf_v1.h
+test_sf_v3.o: test_sf_v3.c sf.h standard.h macro.h test_sf_v2.h test_sf_v1.h
 	$(CC) $(CFLAGS) -c test_sf_v3.c -o test_sf_v3.o
 
 clean:

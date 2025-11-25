@@ -1,7 +1,7 @@
 #include "test_sf_v3.h"
 #include "inode.h"
 #include <stdio.h>
-#include <string.h>
+#include "standard.h"
 
 static int TestSauvegarderBlocAux(char string[],char nomFichier[], int taille, tBloc bloc){
     char chemin[256];
@@ -57,16 +57,16 @@ static int TestChargerBlocAux(char string[],char nomFichier[], int taille, tBloc
     FILE* fichier = fopen(chemin,"r");
     if (fichier == NULL){
         #ifdef DEBUG
-        fprintf(stderr, "TestChargerBloc : L'ouverture du fichier à loupé\n");
+        fprintf(stderr, "TestChargerBloc : L'ouverture du fichier [%s] à loupé\n",chemin);
         #endif
         return 1;
     }
 
-    unsigned char contenu[100];
+    unsigned char contenu[TAILLE_BLOC+1];
     if (ChargerBloc(bloc,taille,fichier)== -1) return -1;
 
     LireContenuBloc(bloc,contenu,taille);
-    int retour = strcmp((char *) contenu,(char*)string);
+    int retour = ReStrcmp((char *) contenu,(char*)string,taille);
     if (retour != 0){
         #ifdef DEBUG
         fprintf(stderr, "TestLireContenuBloc : [%s] et [%s] sont different\n",(char *) bloc,(char*)string);
@@ -101,7 +101,7 @@ int TestChargerBloc(void){
 static int TestEcrireDonneesInodeAux(char contenu[],long taille,tInode inode,long decallage,long ecriteTaille){
     int retour;
     if ((retour = EcrireDonneesInode(inode, (unsigned char*)contenu, taille, decallage))
-        != ecriteTaille-decallage){
+        != ecriteTaille){
         #ifdef DEBUG
         fprintf(stderr, "TestEcrireDonneesInodeAux : EcrireDonneesInode à loupé\n %d != %ld\n",retour,ecriteTaille);
         #endif
@@ -128,14 +128,14 @@ int TestEcrireDonneesInode(void){
     DetruireInode(&inode);
 
     inode = CreerInode(2, 0);
-    if (TestEcrireDonneesInodeAux("Projet du module ProgC",0+1,inode,NB_BLOCS_DIRECTS*TAILLE_BLOC,0)!=0){
+    if (TestEcrireDonneesInodeAux("Projet du module ProgC",22+1,inode,NB_BLOCS_DIRECTS*TAILLE_BLOC,0)!=0){
         return 1;
     }
     AfficherInode(inode);
     DetruireInode(&inode);
 
     inode = CreerInode(3, 0);
-    if (TestEcrireDonneesInodeAux("AAAAA",5+1,inode,10,((5+1+10 > NB_BLOCS_DIRECTS*TAILLE_BLOC) ? NB_BLOCS_DIRECTS*TAILLE_BLOC : 5+1+10))!=0){
+    if (TestEcrireDonneesInodeAux("AAAAA",5+1,inode,10,((5+1+10 > NB_BLOCS_DIRECTS*TAILLE_BLOC) ? NB_BLOCS_DIRECTS*TAILLE_BLOC : 5+1))!=0){
         return 1;
     }
     AfficherInode(inode);
@@ -145,10 +145,58 @@ int TestEcrireDonneesInode(void){
 }
 
 int TestLireDonneesInode(void){
+    tInode inode = CreerInode(0, 0);
+    if (LireDonneesInode(inode, NULL, 23+1,0) != -1){
+        fprintf(stderr, "TestLireDonneesInode : Retourne pas -1 avec contenu NULL\n");
+        DetruireInode(&inode);
+        return 1;
+    }
+    EcrireDonneesInode(inode,(unsigned char *) "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam sodales fringilla egestas. Integer vulputate ullamcorper nunc, sed varius magna fermentum at. Maecenas laoreet odio tortor, nec commodo sapien lacinia et. Cras ornare sit amet mi vitae mollis. Suspendisse potenti. Morbi non elit a velit consectetur placerat ac nec massa. Maecenas eu velit eu diam lobortis semper. Sed blandit, nisl congue finibus egestas, nisl libero porttitor libero, sed tempus nunc sapien eu elit. Integer eu ex id neque bibendum gravida ut nec nisl. Fusce non nibh vel turpis sodales aliquam ut vel ante. Pellentesque pulvinar at mi lacinia faucibus. Cras bibendum malesuada sem, at dapibus dolor ultrices a ligula."
+        , 701+1,0);
+    unsigned char contenu[NB_BLOCS_DIRECTS*TAILLE_BLOC];
+    if (LireDonneesInode(inode,contenu,((701+1 > NB_BLOCS_DIRECTS*TAILLE_BLOC) ? NB_BLOCS_DIRECTS*TAILLE_BLOC : 701+1),0) != ((701+1 > NB_BLOCS_DIRECTS*TAILLE_BLOC) ? NB_BLOCS_DIRECTS*TAILLE_BLOC : 701+1)){
+        DetruireInode(&inode);
+        return 1;
+    }
+    int retour = ReStrcmp((char *) contenu,"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam sodales fringilla egestas. Integer vulputate ullamcorper nunc, sed varius magna fermentum at. Maecenas laoreet odio tortor, nec commodo sapien lacinia et. Cras ornare sit amet mi vitae mollis. Suspendisse potenti. Morbi non elit a velit consectetur placerat ac nec massa. Maecenas eu velit eu diam lobortis semper. Sed blandit, nisl congue finibus egestas, nisl libero porttitor libero, sed tempus nunc sapien eu elit. Integer eu ex id neque bibendum gravida ut nec nisl. Fusce non nibh vel turpis sodales aliquam ut vel ante. Pellentesque pulvinar at mi lacinia faucibus. Cras bibendum malesuada sem, at dapibus dolor ultrices a ligula.",((701+1 > NB_BLOCS_DIRECTS*TAILLE_BLOC) ? NB_BLOCS_DIRECTS*TAILLE_BLOC : 701+1));
+    if (retour != 0){
+        #ifdef DEBUG
+        fprintf(stderr, "TestLireContenuBloc : [%s] , les chaines sont differentes\n",contenu);
+        #endif
+        AfficherInode(inode);
+        DetruireInode(&inode);
+        return 1;
+    }
+    DetruireInode(&inode);
     return 0;
+
 }
 
 int TestSauvegarderInode(void){
+    char chemin[256];
+    sprintf(chemin, "%s/%s", CHEMIN_ACCES, "fichier4.proj");
+    FILE* fichier = fopen(chemin,"w");
+    if (fichier == NULL){
+        #ifdef DEBUG
+        fprintf(stderr, "TestSauvegarderInode : L'ouverture du fichier à loupé\n");
+        #endif
+        return 1;
+    }
+    tInode inode = CreerInode(2, 2);
+    EcrireDonneesInode(inode,(unsigned char *) "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam sodales fringilla egestas. Integer vulputate ullamcorper nunc, sed varius magna fermentum at. Maecenas laoreet odio tortor, nec commodo sapien lacinia et. Cras ornare sit amet mi vitae mollis. Suspendisse potenti. Morbi non elit a velit consectetur placerat ac nec massa. Maecenas eu velit eu diam lobortis semper. Sed blandit, nisl congue finibus egestas, nisl libero porttitor libero, sed tempus nunc sapien eu elit. Integer eu ex id neque bibendum gravida ut nec nisl. Fusce non nibh vel turpis sodales aliquam ut vel ante. Pellentesque pulvinar at mi lacinia faucibus. Cras bibendum malesuada sem, at dapibus dolor ultrices a ligula."
+        , 701+1,0);
+
+
+    if (SauvegarderInode(inode,fichier) != 0){
+        fclose(fichier);
+        DetruireInode(&inode);
+        return 1;
+    }
+
+    fclose(fichier);
+    DetruireInode(&inode);
+    return 0;
+
     return 0;
 }
 

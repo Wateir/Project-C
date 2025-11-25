@@ -28,5 +28,4 @@
 #define TEST(NomFonctionTest,ParametreFonction,TypeDebug) if (NomFonctionTest(ParametreFonction))return 1;
 #endif
 
-
 #endif

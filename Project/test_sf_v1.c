@@ -65,7 +65,7 @@ int TestEcrireContenuBloc(unsigned char** string){
 }
 
 static int TestLireContenuBlocAux(unsigned char** string,tBloc bloc, int numero,int taille){
-    unsigned char contenu[100];
+    unsigned char contenu[TAILLE_BLOC+1];
     LireContenuBloc(bloc,contenu,taille);
 
     int retour = strcmp((char *) contenu,(char*)string[numero]);
@@ -235,17 +235,23 @@ int TestEcrireDonneesInode1bloc(void){
     unsigned char string[23+1] ="Projet du module ProgC";
 
     if (EcrireDonneesInode1bloc(inode, NULL, 23+1) != -1){
+        #ifdef DEBUG
         fprintf(stderr, "TestEcrireDonneesInode1bloc : Retourne pas -1 avec contenu NULL\n");
+        #endif
         DetruireInode(&inode);
         return 1;
     }
     if (EcrireDonneesInode1bloc(inode, string, 23+1) == -1){
+        #ifdef DEBUG
         fprintf(stderr, "TestEcrireDonneesInode1bloc : [%s] n'a pas pu etre ecris\n",string);
+        #endif
         DetruireInode(&inode);
         return 1;
     }
     if (strcmp((char *) inode->blocDonnees[0], (char*)string) != 0){
+        #ifdef DEBUG
         fprintf(stderr, "TestEcrireDonneesInode1bloc : [%s] et [%s] sont different\n",inode->blocDonnees[0],string);
+        #endif
         DetruireInode(&inode);
         return 1;
     }
@@ -257,17 +263,32 @@ int TestLireDonneesInode1bloc(void){
     unsigned char string[23+1] ="Projet du module ProgC";
 
     if (LireDonneesInode1bloc(inode, NULL, 23+1) != -1){
+        #ifdef DEBUG
         fprintf(stderr, "TestLireDonneesInode1bloc : Retourne pas -1 avec contenu NULL\n");
+        #endif
         DetruireInode(&inode);
         return 1;
     }
     if (EcrireDonneesInode1bloc(inode, string, 23+1) == -1){
+        #ifdef DEBUG
         fprintf(stderr, "TestLireDonneesInode1bloc : [%s] n'a pas pu etre ecris\n",string);
+        #endif
         DetruireInode(&inode);
         return 1;
     }
-    if (strcmp((char *) inode->blocDonnees[0], (char*)string) != 0){
+    unsigned char contenu[TAILLE_BLOC+1];
+    int retour;
+    if ((retour = LireDonneesInode1bloc(inode,contenu,23+1)) != 23+1){
+        #ifdef DEBUG
+        fprintf(stderr, "TestLireDonneesInode1bloc : LireDonneesInode1bloc n'a pas retourner la bonne valeur : %d\n",retour);
+        #endif
+        DetruireInode(&inode);
+        return 1;
+    }
+    if (strcmp((char *) string,(char*) contenu) != 0){
+        #ifdef DEBUG
         fprintf(stderr, "TestLireDonneesInode1bloc : [%s] et [%s] sont different\n",inode->blocDonnees[0],string);
+        #endif
         DetruireInode(&inode);
         return 1;
     }
