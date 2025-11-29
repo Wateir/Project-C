@@ -28,4 +28,17 @@
 #define TEST(NomFonctionTest,ParametreFonction,TypeDebug) if (NomFonctionTest(ParametreFonction))return 1;
 #endif
 
+#ifdef DEBUG
+#define RETOURNE_ERREUR(NomFonction,ValeurRetour,MessageErreur,EtapeOptionnel){\
+    fprintf(stderr, "%s : %s", #NomFonction, MessageErreur); \
+    EtapeOptionnel \
+    return ValeurRetour;\
+    }
+#else
+#define RETOURNE_ERREUR(NomFonction,ValeurRetour,MessageErreur,EtapeOptionnel){\
+    EtapeOptionnel \
+    return ValeurRetour;\
+    }
+#endif
+
 #endif

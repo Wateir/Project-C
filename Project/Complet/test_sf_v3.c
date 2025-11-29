@@ -1,10 +1,12 @@
 #include "test_sf_v3.h"
 #include "inode.h"
-#include <stdio.h>
+#include "macro.h"
 #include "standard.h"
+#include "sf.h"
+#include <stdio.h>
 
 static int TestSauvegarderBlocAux(char string[],char nomFichier[], int taille, tBloc bloc){
-    char chemin[256];
+    char chemin[TAILLE_CHEMIN];
     sprintf(chemin, "%s/%s", CHEMIN_ACCES, nomFichier);
 
     FILE* fichier = fopen(chemin,"w");
@@ -51,7 +53,7 @@ int TestSauvegarderBloc(void){
 }
 
 static int TestChargerBlocAux(char string[],char nomFichier[], int taille, tBloc bloc){
-    char chemin[256];
+    char chemin[TAILLE_CHEMIN];
     sprintf(chemin, "%s/%s", CHEMIN_ACCES, nomFichier);
 
     FILE* fichier = fopen(chemin,"r");
@@ -173,7 +175,7 @@ int TestLireDonneesInode(void){
 }
 
 int TestSauvegarderInode(void){
-    char chemin[256];
+    char chemin[TAILLE_CHEMIN];
     sprintf(chemin, "%s/%s", CHEMIN_ACCES, "fichier4.proj");
     FILE* fichier = fopen(chemin,"w");
     if (fichier == NULL){
@@ -196,15 +198,98 @@ int TestSauvegarderInode(void){
     fclose(fichier);
     DetruireInode(&inode);
     return 0;
-
-    return 0;
 }
 
 int TestChargerInode(void){
+    char chemin[TAILLE_CHEMIN];
+    sprintf(chemin, "%s/%s", CHEMIN_ACCES, "fichier4.proj");
+    FILE* fichier = fopen(chemin,"r");
+    if (fichier == NULL){
+        #ifdef DEBUG
+        fprintf(stderr, "TestChargerInode : L'ouverture du fichier à loupé\n");
+        #endif
+        fclose(fichier);
+        return 1;
+    }
+    if (ChargerInode(NULL,fichier)==0){
+        #ifdef DEBUG
+        fprintf(stderr, "TestChargerInode : inode = NULL ne retourne pas une erreur\n");
+        #endif
+        fclose(fichier);
+        return 1;
+    }
+    tInode inode = CreerInode(2, 2);
+    if (ChargerInode(&inode,fichier)!=0){
+        DetruireInode(&inode);
+        fclose(fichier);
+        return 1;
+    }
+
+    DetruireInode(&inode);
+    fclose(fichier);
+    return 0;
+}
+
+static int TestEcrireFichierSFAux(char nomFichier[],int taille,char chaine[],tSF sf,natureFichier type){
+    char chemin[TAILLE_CHEMIN];
+    sprintf(chemin, "%s/%s", CHEMIN_ACCES,nomFichier);
+    FILE* fichier = fopen(chemin,"w");
+    if (fichier == NULL){
+        #ifdef DEBUG
+        fprintf(stderr, "TestEcrireFichierSFAux : L'ouverture du fichier à loupé\n");
+        #endif
+        return 1;
+    }
+    int valRetour = fwrite(chaine,sizeof(char),taille, fichier);
+    if (valRetour!= taille){
+        #ifdef DEBUG
+        fprintf(stderr, "TestEcrireFichierSFAux : EcrireContenuBloc à loupé\n");
+        #endif
+        return 1;
+    }
+    fclose(fichier);
+
+    if (EcrireFichierSF(sf,chemin,type) != taille){
+        return 1;
+    }
+    unsigned char ch1[TAILLE_BLOC*NB_BLOCS_DIRECTS];
+
+    TEST_EXISTANCE(sf->listeInodes.dernier->inode,"TestEcrireFichierSFAux","Pas d'inode alloué",1)
+    if ((valRetour = LireDonneesInode(sf->listeInodes.dernier->inode,ch1,taille,0))!=taille){
+        #ifdef DEBUG
+        fprintf(stderr, "TestEcrireFichierSFAux : LireDonnesInode à loupé, [%d], [%d]\n",valRetour,taille);
+        #endif
+        return 1;
+    }
+    if (ReStrcmp((char*) ch1,chaine,taille)!=0){
+        #ifdef DEBUG
+        fprintf(stderr, "TestEcrireFichierSFAux : les chaines sont differentes\n");
+        #endif
+        return 1;
+    }
     return 0;
 }
 
 int TestEcrireFichierSF(void){
+    tSF sf = CreerSF("nvme0n1p2");
+
+    if (TestEcrireFichierSFAux("fichier8.proj",22+1,"Projet du module ProgC",sf,2)!=0){
+        DetruireSF(&sf);
+        return 1;
+    }
+    if (TestEcrireFichierSFAux("fichier9.proj",0+1,"",sf,1)!=0){
+        DetruireSF(&sf);
+        return 1;
+    }
+    if (TestEcrireFichierSFAux("fichier10.proj",5+1,"AAAAA",sf,3)!=0){
+        DetruireSF(&sf);
+        return 1;
+    }
+    if (TestEcrireFichierSFAux("fichier11.proj",((701+1 > NB_BLOCS_DIRECTS*TAILLE_BLOC) ? NB_BLOCS_DIRECTS*TAILLE_BLOC : 701+1),"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam sodales fringilla egestas. Integer vulputate ullamcorper nunc, sed varius magna fermentum at. Maecenas laoreet odio tortor, nec commodo sapien lacinia et. Cras ornare sit amet mi vitae mollis. Suspendisse potenti. Morbi non elit a velit consectetur placerat ac nec massa. Maecenas eu velit eu diam lobortis semper. Sed blandit, nisl congue finibus egestas, nisl libero porttitor libero, sed tempus nunc sapien eu elit. Integer eu ex id neque bibendum gravida ut nec nisl. Fusce non nibh vel turpis sodales aliquam ut vel ante. Pellentesque pulvinar at mi lacinia faucibus. Cras bibendum malesuada sem, at dapibus dolor ultrices a ligula.",sf,3)!=0){
+        DetruireSF(&sf);
+        return 1;
+    }
+    DetruireSF(&sf);
     return 0;
 }
 

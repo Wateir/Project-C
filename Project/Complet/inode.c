@@ -6,16 +6,12 @@
 #include <time.h>
 #include "inode.h"
 #include "macro.h"
-#include "standard.h"
 
 #define STRING_ENUM (12+1)
 
 tBloc CreerBloc(void){
     tBloc bloc = calloc(TAILLE_BLOC,sizeof(unsigned char));
-    if (bloc == NULL){
-        fprintf(stderr," CreerBloc : probleme creation");
-        return NULL;
-    }
+    TEST_EXISTANCE(bloc,"CreerBloc","probleme creation \n",NULL)
     return bloc;
 }
 
@@ -55,40 +51,28 @@ long LireContenuBloc(tBloc bloc, unsigned char *contenu, long taille){
 int SauvegarderBloc(tBloc bloc, long taille, FILE *fichier){
     TEST_EXISTANCE(fichier,"SauvegarderBloc","le fichier n'existe pas",-1)
     TEST_EXISTANCE(bloc,"SauvegarderBloc","le bloc n'existe pas",-1)
+    if (taille>TAILLE_BLOC)
+    RETOURNE_ERREUR("SauvegarderBloc",-1,"taille obtenu trop importante",)
 
-    int valRetour;
-    for(int i=0;i<taille&&i<TAILLE_BLOC;i++){
-        valRetour =  putc(bloc[i], fichier);
-        if (valRetour == EOF){
-            #if DEBUG
-            fprintf(stderr," SauvegarderBloc : l'ecriture a echoué");
-            #endif
-            return -1;
-        }
-    }
-
+    int valRetour = fwrite(bloc, 1, taille, fichier);
+    if (valRetour != taille)
+    RETOURNE_ERREUR("SauvegarderBloc",-1,"écriture échouée ",fprintf(stderr,"(%d/%zu octets)\n",valRetour, taille);)
     return 0;
 }
 
 int ChargerBloc(tBloc bloc, long taille, FILE *fichier){
-    TEST_EXISTANCE(fichier,"SauvegarderBloc","le fichier n'existe pas",-1)
-    TEST_EXISTANCE(bloc,"SauvegarderBloc","le bloc n'existe pas",-1)
-    int valRetour;
-    for(int i=0;i<taille;i++){
-        valRetour = getc(fichier);
-        if (valRetour == EOF){
-            #ifdef DEBUG
-            fprintf(stderr,"ChargerBloc : la lecture à loupé au %dime caractère\n",i);
-            #endif
-            printf("vide\n");
-            return -1;
-        }
-        else{
-            bloc[i]=valRetour;
-        }
-    }
+    TEST_EXISTANCE(fichier, "ChargerBloc", "le fichier n'existe pas", -1)
+    TEST_EXISTANCE(bloc,   "ChargerBloc", "le bloc n'existe pas",   -1)
+    if (taille>TAILLE_BLOC)
+    RETOURNE_ERREUR("ChargerBloc",-1,"taille obtenu trop importante",)
+
+
+    int valRetour = fread(bloc, 1, taille, fichier);
+    if (valRetour != taille)
+    RETOURNE_ERREUR("ChargerBloc",-1,"lecture échouée ",fprintf(stderr,"(%d/%zu octets)\n",valRetour, taille);)
     return 0;
 }
+
 
 //Retourne le bloc à l'inode (inode)
 static unsigned char** BlocDonnees(const tInode inode){
@@ -99,10 +83,8 @@ static unsigned char** BlocDonnees(const tInode inode){
 
 tInode CreerInode(unsigned int numInode, natureFichier type){
     tInode inode= malloc(sizeof(struct sInode));
-    if (inode == NULL){
-        fprintf(stderr," CreerInode : probleme creation");
-        return NULL;
-    }
+    TEST_EXISTANCE(inode,"CreerInode","probleme creation\n",NULL)
+
     for(int i=0;i<NB_BLOCS_DIRECTS;i++) BlocDonnees(inode)[i]= NULL;
     // on initialise a NULL pour etre sur que si c'est pas changer, Detruire vera la non initialisation
     inode->numero = numInode;
@@ -114,9 +96,9 @@ tInode CreerInode(unsigned int numInode, natureFichier type){
 
 void DetruireInode(tInode* pInode){
     for (int i=0;i<NB_BLOCS_DIRECTS;i++){
-    if ((*pInode)->blocDonnees[i] != NULL){
-        free((*pInode)->blocDonnees[i]);
-    }
+        if ((*pInode)->blocDonnees[i] != NULL){
+            DetruireBloc(&(*pInode)->blocDonnees[i]);
+        }
     }
     free(*pInode);
     *pInode = NULL;
@@ -167,26 +149,11 @@ static const char* stringNatureFichier(const natureFichier type){
 }
 
 void AfficherInode(tInode inode){
-    if (inode==NULL){
-        #ifdef DEBUG
-        fprintf(stderr,"AfficherInode : inode->blocDonnees[0] est vide, Numero Inode = %d\n",Numero(inode));
-        #endif
-        printf("vide\n");
-        return;
-    }
-    if (BlocDonnees(inode)[0]==NULL){
-        #ifdef DEBUG
-        fprintf(stderr,"AfficherInode : inode->blocDonnees[0] est vide, Numero Inode = %d\n",Numero(inode));
-        #endif
-        return;
-    }
-    if (Taille(inode)<0){
-        #ifdef DEBUG
-        fprintf(stderr,"AfficherInode : taille negative : %ld\n, Numero Inode = %d\n",Taille(inode),Numero(inode));
-        #endif
-        printf("vide\n");
-        return;
-    }
+    TEST_EXISTANCE(inode,"AfficherInode","L'inode n'existe pas \n",)
+    TEST_EXISTANCE(BlocDonnees(inode)[0],"AfficherInode","inode->blocDonnees[0] est vide",)
+    if (Taille(inode)<0)
+    RETOURNE_ERREUR("AfficherInode",,"taille negative\n",printf("vide\n");)
+
     printf("-----Inode-----[%d]\n",Numero(inode));
     printf("type : %s\n",stringNatureFichier(Type(inode)));
     printf("\ttaille : %ld octets\n",Taille(inode));
@@ -213,20 +180,13 @@ void AfficherInode(tInode inode){
 }
 
 long EcrireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille){
-    if (inode == NULL || contenu == NULL || taille < 0) {
-        #ifdef DEBUG
-        fprintf(stderr,"EcrireDonneesInode1bloc : paramètres invalides\n");
-        #endif
-        return -1;
-    }
+    if (inode == NULL || contenu == NULL || taille < 0)
+    RETOURNE_ERREUR("EcrireDonneesInode1bloc",-1,"paramètres invalides\n",)
+
     if (BlocDonnees(inode)[0]==NULL){
         BlocDonnees(inode)[0] = CreerBloc();
-        if (BlocDonnees(inode)[0]==NULL){
-            #ifdef DEBUG
-            fprintf(stderr,"EcrireDonneesInode1bloc : allocation à loupé\n");
-            #endif
-            return -1;
-        }
+        if (BlocDonnees(inode)[0]==NULL)
+        RETOURNE_ERREUR("EcrireDonneesInode1bloc",-1,"allocation à loupé\n",)
     }
     inode->taille = taille = EcrireContenuBloc(BlocDonnees(inode)[0], contenu, taille);
     BlocDonnees(inode)[1] = NULL;
@@ -237,44 +197,26 @@ long EcrireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille){
 }
 
 long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille){
-    if (inode == NULL || contenu == NULL || taille < 0) {
-        #ifdef DEBUG
-        fprintf(stderr,"LireDonneesInode1bloc : paramètres invalides\n");
-        #endif
-        return -1;
-    }
-    if (BlocDonnees(inode)[0]==NULL){
-        #ifdef DEBUG
-        fprintf(stderr,"LireDonneesInode1bloc : rien à lire\n");
-        #endif
-        return -1;
-    }
+    if (inode == NULL || contenu == NULL || taille < 0)
+    RETOURNE_ERREUR("LireDonneesInode1bloc",-1,"paramètres invalides\n",)
+    TEST_EXISTANCE(BlocDonnees(inode)[0],"LireDonneesInode1bloc"," rien à lire\n",-1)
     //Les deux dernières lignes dans ce sens suppose qu'on assume que cela prendra moins d'une seconde a être realisé
     inode->dateDerAcces = time(NULL);
     return LireContenuBloc(BlocDonnees(inode)[0], contenu, taille);
 }
 
 long EcrireDonneesInode(tInode inode, unsigned char *contenu, long taille, long decalage) {
-    if (inode == NULL || contenu == NULL || taille < 0) {
-        #ifdef DEBUG
-        fprintf(stderr,"EcrireDonneesInode : paramètres invalides\n");
-        #endif
-        return -1;
-    }
+    if (inode == NULL || contenu == NULL || taille < 0)
+    RETOURNE_ERREUR("EcrireDonneesInode",-1,"paramètres invalides\n",)
     long resteEcrire = taille;
     long iDecalage = decalage;
     int i = iDecalage / TAILLE_BLOC;
     long posDansBloc = iDecalage % TAILLE_BLOC;
 
     while (i < NB_BLOCS_DIRECTS && resteEcrire > 0) {
-        if (inode->blocDonnees[i] == NULL) {
+        if (BlocDonnees(inode)[i] == NULL) {
             inode->blocDonnees[i] = CreerBloc();
-            if (inode->blocDonnees[i] == NULL) {
-                #ifdef DEBUG
-                fprintf(stderr,"EcrireDonneesInode : échec allocation bloc\n");
-                #endif
-                return (inode->taille = taille - resteEcrire);
-            }
+            TEST_EXISTANCE(BlocDonnees(inode)[i],"EcrireDonneesInode","échec allocation bloc\n",(inode->taille = taille - resteEcrire))
         }
         long espaceBloc = TAILLE_BLOC - posDansBloc;
         long aEcrire;
@@ -297,22 +239,13 @@ long EcrireDonneesInode(tInode inode, unsigned char *contenu, long taille, long 
 }
 
 long LireDonneesInode(tInode inode, unsigned char *contenu, long taille, long decalage){
-    if (inode == NULL || taille < 0 || contenu == NULL) {
-        #ifdef DEBUG
-        fprintf(stderr,"LireDonneesInode : paramètres invalides\n");
-        #endif
-        return -1;
-    }
+    if (inode == NULL || contenu == NULL || taille < 0)
+    RETOURNE_ERREUR("LireDonneesInode",-1,"paramètres invalides\n",)
     long ecris = 0;
     long iDecalage = decalage;
     for (int i=0;ecris<taille && i<NB_BLOCS_DIRECTS;i++){
-        for(int j =0;j<TAILLE_BLOC;j++){
-            if (BlocDonnees(inode)[i]==NULL){
-                #ifdef DEBUG
-                fprintf(stderr,"LireDonneesInode : Bloc non initialisé\n");
-                #endif
-                return ecris;
-            }
+        for(int j =0;j < TAILLE_BLOC && ecris < taille;j++){
+            TEST_EXISTANCE(BlocDonnees(inode)[i],"LireDonneesInode","Bloc non initialisé\n",ecris)
             if(iDecalage>0)iDecalage--;
             else{
                 contenu[ecris] = BlocDonnees(inode)[i][j];
@@ -324,44 +257,54 @@ long LireDonneesInode(tInode inode, unsigned char *contenu, long taille, long de
     return ecris;
 }
 
-int SauvegarderInode(tInode inode, FILE *fichier){
-    TEST_EXISTANCE(fichier,"SauvegarderInode","le fichier n'existe pas",-1)
-    TEST_EXISTANCE(inode,"SauvegarderInode","l'inode n'existe pas",-1)
+int SauvegarderInode(tInode inode, FILE *fichier) {
+    TEST_EXISTANCE(fichier,"SauvegarderInode","le fichier n'existe pas", -1)
+    TEST_EXISTANCE(inode,"SauvegarderInode","l'inode n'existe pas",   -1)
 
-    long resteEcrire = Taille(inode),valRetour;
-    fprintf(fichier,"numero = %d\ntype = %d\ntaille = %ld\n",Numero(inode),Type(inode),Taille(inode));
+    long numero = Numero(inode), type   = Type(inode), taille = Taille(inode);
 
-    for (int i=0;BlocDonnees(inode)[i]!=NULL && i<NB_BLOCS_DIRECTS;i++){
-        valRetour = SauvegarderBloc(BlocDonnees(inode)[i],resteEcrire,fichier);
-        if (valRetour == -1){
-            #ifdef DEBUG
-            fprintf(stderr,"SauvegarderInode : erreur sur l'ecriture du bloc\n");
-            #endif
-            return -1;
-        }
-        if(resteEcrire>TAILLE_BLOC){
-            resteEcrire-=TAILLE_BLOC;
-        }
-        else{
-            resteEcrire-=resteEcrire;
-        }
-    }
-    if (resteEcrire !=0){
-        #ifdef DEBUG
-        fprintf(stderr,"SauvegarderInode : Des données n'ont pas était ecrite\n");
-        #endif
-        return -1;
-    }
-    putc('\n', fichier); //Bonne pratique pour les outils comme cat produise un resultat interresant lors d'un affichage du fichier
+    if (fwrite(&numero, sizeof(long), 1, fichier) != 1)
+    RETOURNE_ERREUR("SauvegarderInode",-1,"ecriture du numero loupé\n",)
+    if (fwrite(&type, sizeof(long), 1, fichier) != 1)
+    RETOURNE_ERREUR("SauvegarderInode",-1,"ecriture du type loupé\n",)
+    if (fwrite(&taille, sizeof(long), 1, fichier) != 1)
+    RETOURNE_ERREUR("SauvegarderInode",-1,"ecriture de la taille loupé\n",)
+
+    unsigned char *contenu = malloc(taille);
+    TEST_EXISTANCE(contenu, "SauvegarderInode","l'allocation a échoué\n", -1)
+    if (LireDonneesInode(inode, contenu, taille, 0) != taille)
+    RETOURNE_ERREUR("SauvegarderInode",-1,"lecture données incomplète\n",free(contenu);)
+    if (fwrite(contenu, 1, taille, fichier) != (size_t)taille)
+    RETOURNE_ERREUR("SauvegarderInode",-1,"ecriture des données à loupé\n",free(contenu);)
+    free(contenu);
     return 0;
 }
 
-int ChargerInode(tInode *pInode, FILE *fichier){
-    if (fscanf(fichier,"numero = %u\ntype = %u\ntaille = %ld\n",&(*pInode)->numero,(natureFichier*)&(*pInode)->type,&(*pInode)->taille)!=3){
-        #ifdef DEBUG
-        fprintf(stderr, "ChargerInode : erreur lecture inode\n");
-        #endif
-        return -1;
-    }
+
+int ChargerInode(tInode *pInode, FILE *fichier) {
+    TEST_EXISTANCE(fichier,"ChargerInode","le fichier n'existe pas", -1)
+    TEST_EXISTANCE(pInode,"ChargerInode","l'inode n'existe pas",   -1)
+
+    long numero, type, taille;
+    if (fread(&numero, sizeof(long), 1, fichier) != 1)
+    RETOURNE_ERREUR("ChargerInode",-1,"lecture du numero loupé\n",)
+    if (fread(&type, sizeof(long), 1, fichier) != 1)
+    RETOURNE_ERREUR("ChargerInode",-1,"lecture du type loupé\n",)
+    if (fread(&taille, sizeof(long), 1, fichier) != 1)
+    RETOURNE_ERREUR("ChargerInode",-1,"lecture de la taille loupé\n",)
+
+    (*pInode)->numero = numero;
+    (*pInode)->type   = type;
+    (*pInode)->taille = taille;
+    unsigned char *contenu = malloc(taille);
+    TEST_EXISTANCE(contenu, "ChargerInode","l'allocation a échoué\n", -1)
+
+    if (fread(contenu, 1, taille, fichier) != (size_t)taille)
+    RETOURNE_ERREUR("ChargerInode",-1,"erreur de lecture du contenu\n",)
+
+    if (EcrireDonneesInode(*pInode, contenu, taille, 0) != taille)
+    RETOURNE_ERREUR("ChargerInode",-1,"écriture interne incomplète\n",)
+
+    free(contenu);
     return 0;
 }

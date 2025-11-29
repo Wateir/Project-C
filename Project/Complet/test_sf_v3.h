@@ -2,6 +2,7 @@
 #define __TEST_SF_V3_H__
 
 #define CHEMIN_ACCES "./Fichier/"
+#define TAILLE_CHEMIN 256
 
 extern int TestSauvegarderBloc(void);
 

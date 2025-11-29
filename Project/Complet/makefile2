@@ -2,7 +2,7 @@ CC      = gcc
 CFLAGS  = -std=c11 -Wpedantic -Wall -Wextra -g
 LDLIBS  = -lm
 RM      = rm -f
-OBJ     = gerer_sf_v2.o inode.o sf.o test_sf_v1.o test_sf_v2.o
+OBJ     = gerer_sf_v2.o inode.o sf.o test_sf_v1.o test_sf_v2.o standard.o
 EXE     = gerer_sf_v2
 
 # classique est definis pour que make -f makefile1 utilise CLFAG par defaut et non debug
@@ -12,7 +12,7 @@ classique: all
 debug: CFLAGS += -DDEBUG
 debug: all
 # sanitize active les fsanitize, make -f makefile1 sanitize
-sanitize: CFAGS += -fsanitize=undefined,address,leak
+sanitize: CFLAGS += -fsanitize=undefined,address,leak
 sanitize: all
 all: $(EXE)
 
@@ -28,10 +28,13 @@ inode.o: inode.c inode.h
 sf.o: sf.c sf.h
 	$(CC) $(CFLAGS) -c sf.c -o sf.o
 
+standard.0: standard.c standard.h
+	$(CC) $(CFLAGS) -c standard.c -o string.o
+
 test_sf_v1.o: test_sf_v1.c inode.h
 	$(CC) $(CFLAGS) -c test_sf_v1.c -o test_sf_v1.o
 
-test_sf_v2.o: test_sf_v2.c sf.h
+test_sf_v2.o: test_sf_v2.c sf.h standard.h
 	$(CC) $(CFLAGS) -c test_sf_v2.c -o test_sf_v2.o
 
 clean:

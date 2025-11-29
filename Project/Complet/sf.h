@@ -41,4 +41,13 @@ extern void AfficherSF(tSF sf);
 //Ecrit le contenu d’un fichier
 extern long Ecrire1BlocFichierSF(tSF sf, char nomFichier[], natureFichier type);
 
+//Ecrit un fichier dans le système de fichiers sf passé en paramètre.
+extern long EcrireFichierSF(tSF sf, char nomFichier[], natureFichier type);
+
+//Sauvegarde le système de fichiers paramètre dans un fichier de nom nomFichier
+extern int SauvegarderSF(tSF sf, char nomFichier[]);
+
+//Charge un système de fichiers depuis un fichier (sur disque) de nom nomFichier
+extern int ChargerSF(tSF *pSF, char nomFichier[]);
+
 #endif
