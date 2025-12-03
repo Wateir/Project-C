@@ -6,7 +6,35 @@
  **/
 
 #include "sf.h"
-#include "bloc.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef DEBUG
+#define TEST_EXISTANCE(pointeur,NomFonction,MessageErreur,ValeurRetour) \
+    if ((pointeur) == NULL) { \
+        fprintf(stderr, "%s : %s\n", NomFonction, MessageErreur); \
+        return ValeurRetour;\
+    }
+#else
+#define TEST_EXISTANCE(pointeur,NomFonction,MessageErreur,ValeurRetour)\
+    if ((pointeur) == NULL) { \
+    return ValeurRetour;\
+    }
+#endif
+
+#ifdef DEBUG
+#define RETOURNE_ERREUR(NomFonction,ValeurRetour,MessageErreur,EtapeOptionnel){\
+    fprintf(stderr, "%s : %s", #NomFonction, MessageErreur); \
+    EtapeOptionnel \
+    return ValeurRetour;\
+    }
+#else
+#define RETOURNE_ERREUR(NomFonction,ValeurRetour,MessageErreur,EtapeOptionnel){\
+    EtapeOptionnel \
+    return ValeurRetour;\
+    }
+#endif
 
 // Taille maximale du nom du SF (ou nom du disque)
 #define TAILLE_NOM_DISQUE 24
@@ -55,8 +83,12 @@ struct sSF
 * Entrée : le nom du disque (ou du SF)
 * Sortie : le super-bloc, ou NULL en cas de problème
 */
-static tSuperBloc CreerSuperBloc(char nomDisque[]) {
-  // A COMPLETER
+static tSuperBloc CreerSuperBloc(char nomDisque[]){
+    tSuperBloc bloc = malloc(sizeof(struct sSuperBloc));
+    TEST_EXISTANCE(bloc,"CreerSuperBloc","probleme creation\n",NULL)
+    strcpy(bloc->nomDisque, nomDisque);
+    bloc->dateDerModif = time(NULL);
+    return bloc;
 }
 
 /* V2
@@ -64,8 +96,9 @@ static tSuperBloc CreerSuperBloc(char nomDisque[]) {
 * Entrée : le super-bloc à détruire
 * Sortie : aucune
 */
-static void DetruireSuperBloc(tSuperBloc *pSuperBloc) {
-  // A COMPLETER
+static void DetruireSuperBloc(tSuperBloc *pSuperBloc){
+    free(*pSuperBloc);
+    *pSuperBloc = NULL;
 }
 
 /* V2
@@ -73,8 +106,8 @@ static void DetruireSuperBloc(tSuperBloc *pSuperBloc) {
 * Entrée : le super-bloc à afficher
 * Sortie : aucune
 */
-static void AfficherSuperBloc(tSuperBloc superBloc) {
-  // A COMPLETER
+static void AfficherSuperBloc(tSuperBloc superBloc){
+    printf("taille bloc = 64, date der modif = %s\n",ctime(&(superBloc)->dateDerModif));
 }
 
 /* V2
@@ -82,18 +115,55 @@ static void AfficherSuperBloc(tSuperBloc superBloc) {
  * Entrée : nom du disque à associer au système de fichiers créé
  * Retour : le système de fichiers créé, ou NULL en cas d'erreur
  */
-tSF CreerSF (char nomDisque[]){
-  // A COMPLETER
-}
+ tSF CreerSF(char nomDisque[]){
+     tSF sf = malloc(sizeof(struct sSF));
+     TEST_EXISTANCE(sf,"CreerSF","L'allocation à loupé\n",NULL)
+
+     sf->superBloc = CreerSuperBloc(nomDisque);
+     sf->listeInodes.nbInodes = 0;
+     sf->listeInodes.dernier = NULL;
+     sf->listeInodes.premier = NULL;
+     return sf;
+ }
+
+ static struct sListeInodesElement* CreerListeInodesElement(tInode inode){
+     TEST_EXISTANCE(inode,"CreerListeInodesElement","L'inode n'existe pas\n",NULL)
+
+     struct sListeInodesElement* liste = malloc(sizeof(struct sListeInodesElement));
+     TEST_EXISTANCE(liste,"CreerListeInodesElement","L'allocation à loupé\n",NULL)
+     liste->inode = inode;
+     liste->suivant = NULL;
+     return liste;
+ }
+
+ static void DetruireListeInodesElement(struct sListeInodesElement** liste){
+     TEST_EXISTANCE(*liste,"DetruireListeInodesElement","la liste d'inode n'existe pas",)
+     DetruireInode(&(*liste)->inode);
+     free(*liste);
+     *liste = NULL;
+ }
 
 /* V2
  * Détruit un système de fichiers et libère la mémoire associée.
  * Entrée : le SF à détruire
  * Sortie : aucune
  */
-void DetruireSF(tSF *pSF) {
-  // A COMPLETER
-}
+ void DetruireSF(tSF *pSF) {
+     TEST_EXISTANCE(*pSF,"DetruireSF","Tentative de free NULL",)
+     DetruireSuperBloc(&((*pSF)->superBloc));
+
+     struct sListeInodesElement *current = (*pSF)->listeInodes.premier;
+     struct sListeInodesElement *temp;
+     while (current != NULL) {
+         temp = current->suivant;
+         DetruireListeInodesElement(&current);
+         current = temp;
+     }
+
+     (*pSF)->listeInodes.premier = NULL;
+     free(*pSF);
+     *pSF = NULL;
+ }
 
 /* V2
  * Affiche les informations relative à un système de fichiers i.e;
@@ -101,18 +171,71 @@ void DetruireSF(tSF *pSF) {
  * Entrée : le SF à afficher
  * Sortie : aucune
  */
-void AfficherSF (tSF sf){
-  // A COMPLETER
-}
+ void AfficherSF(tSF sf){
+     TEST_EXISTANCE(sf,"AfficherSF","Le systeme de fichier n'existe pas\n",)
+
+     printf("sf de nom %s, super bloc :\n",sf->superBloc->nomDisque);
+     AfficherSuperBloc(sf->superBloc);
+     if (sf->listeInodes.nbInodes!=0){
+         printf("Inodes :\n");
+         struct sListeInodesElement* temp = sf->listeInodes.premier;
+         for (int i = 0;i<sf->listeInodes.nbInodes;i++){
+             AfficherInode(temp->inode);
+             temp = temp->suivant;
+         }
+     }
+ }
+
+ static tInode AjouterInodeSF(tSF sf,natureFichier type){
+     tInode inode = CreerInode(sf->listeInodes.nbInodes+1, type);
+     TEST_EXISTANCE(sf, "AjouterInodeSF", "l'allocation de l'inode à loupén", NULL);
+     if(sf->listeInodes.nbInodes==0){
+         sf->listeInodes.premier = CreerListeInodesElement(inode);
+         sf->listeInodes.dernier = sf->listeInodes.premier;
+     }
+     else{
+         struct sListeInodesElement* avantDernier = sf->listeInodes.dernier;
+         avantDernier->suivant = CreerListeInodesElement(inode);
+         sf->listeInodes.dernier = avantDernier->suivant;
+     }
+     sf->listeInodes.dernier->suivant = NULL;
+     sf->listeInodes.nbInodes++;
+     return inode;
+ }
 
 /* V2
  * Ecrit un fichier d'un seul bloc dans le système de fichiers.
  * Entrées : le système de fichiers, le nom du fichier (sur disque) et son type dans le SF (simulé)
  * Sortie : le nombre d'octets effectivement écrits, -1 en cas d'erreur.
  */
-long Ecrire1BlocFichierSF(tSF sf, char nomFichier[], natureFichier type) {
-  // A COMPLETER
-}
+ long Ecrire1BlocFichierSF(tSF sf, char nomFichier[], natureFichier type) {
+     TEST_EXISTANCE(sf, "Ecrire1BlocFichierSF", "Le système de fichier n'existe pas\n", -1);
+     FILE *fichier = fopen(nomFichier, "rb");
+     TEST_EXISTANCE(fichier, "Ecrire1BlocFichierSF", "L'ouverture du fichier a échoué\n", -1);
+
+     fseek(fichier, 0, SEEK_END);
+     long taille = ftell(fichier);
+     fseek(fichier, 0, SEEK_SET);
+
+     taille = ((taille > 64) ? 64 : taille);
+
+     tInode inode = AjouterInodeSF(sf, type);
+     TEST_EXISTANCE(inode, "Ecrire1BlocFichierSF", "L'allocation de l'inode a échoué\n", -1);
+     unsigned char *tampon = malloc(taille);
+     TEST_EXISTANCE(tampon, "Ecrire1BlocFichierSF", "L'allocation du tampon a échoué\n", -1);
+
+     if((long)fread(tampon, 1, taille, fichier)!=taille)
+     RETOURNE_ERREUR("Ecrir1BlocFichierSF",-1,"fread a renvoyer une taille erroné\n",free(tampon);fclose(fichier);)
+
+     fclose(fichier);
+     sf->superBloc->dateDerModif = time(NULL);
+     long res;
+     if((res = EcrireDonneesInode1bloc(inode, tampon, taille))!=taille)
+     RETOURNE_ERREUR("Ecrire1BlocFichierSF",-1,"EcireDonneesInode1bloc a renvoyer une taille erroné\n",free(tampon);)
+
+     free(tampon);
+     return res;
+ }
 
 /* V3
  * Ecrit un fichier (d'un nombre de blocs quelconque) dans le système de fichiers.
@@ -121,24 +244,92 @@ long Ecrire1BlocFichierSF(tSF sf, char nomFichier[], natureFichier type) {
  * Entrées : le système de fichiers, le nom du fichier (sur disque) et son type dans le SF (simulé)
  * Sortie : le nombre d'octets effectivement écrits, -1 en cas d'erreur.
  */
-long EcrireFichierSF(tSF sf, char nomFichier[], natureFichier type) {
-  // A COMPLETER
-}
+ long EcrireFichierSF(tSF sf, char nomFichier[], natureFichier type){
+     TEST_EXISTANCE(sf,"EcrireFichierSF","le systeme de fichier n'existe pas\n",-1)
+     FILE* fichier = fopen(nomFichier,"rb");
+     TEST_EXISTANCE(fichier,"EcrireFichierSF","L'ouverture du fichier à loupé",-1)
+
+     fseek(fichier, 0, SEEK_END);
+     long taille = ftell(fichier);
+     fseek(fichier, 0, SEEK_SET);
+
+     taille = ((taille > 640) ? 640 : taille);
+
+     tInode inode = AjouterInodeSF(sf,type);
+     TEST_EXISTANCE(inode, "EcrireFichierSF","l'allocation a échoué\n", -1)
+     unsigned char *tampon = malloc(taille);
+     TEST_EXISTANCE(tampon, "EcrireFichierSF", "L'allocation du tampon a échoué\n", -1);
+
+     if((long)fread(tampon, 1, taille, fichier)!=taille)
+     RETOURNE_ERREUR("EcrireFichierSF",-1,"fread a renvoyer une taille erroné\n",free(tampon);fclose(fichier);)
+
+     if(EcrireDonneesInode(inode,tampon,taille,0)!=taille)
+     RETOURNE_ERREUR("EcrireFichierSF",-1,"EcireDonneesInode a renvoyer une taille erroné\n",free(tampon);fclose(fichier);)
+
+     fclose(fichier);
+     free(tampon);
+     sf->superBloc->dateDerModif = time(NULL);
+     return taille;
+ }
 
 /* V3
  * Sauvegarde un système de fichiers dans un fichier (sur disque).
  * Entrées : le système de fichiers, le nom du fichier sauvegarde (sur disque)
  * Sortie : 0 en cas de succèe, -1 en cas d'erreur
  */
-int SauvegarderSF(tSF sf, char nomFichier[]) {
-  // A COMPLETER
-}
+ int SauvegarderSF(tSF sf, char nomFichier[]) {
+     FILE *fichier = fopen(nomFichier, "wb");
+     TEST_EXISTANCE(fichier,"SauvegarderSF","L'ouverture du fichier à loupé",-1)
+     int nbInodes = sf->listeInodes.nbInodes;
+
+     if(fwrite(&nbInodes, sizeof(int), 1, fichier) != 1)
+     RETOURNE_ERREUR(SauvegarderSF,-1,"ecriture du nbInode loupé\n",)
+
+     size_t longueur = strlen(sf->superBloc->nomDisque) + 1; // Longueur du nom du superBloc pour la relecture
+     if(fwrite(&longueur, sizeof(size_t), 1, fichier) != 1)
+     RETOURNE_ERREUR(SauvegarderSF,-1,"ecriture du nom du disque loupé\n",)
+     if (fwrite(sf->superBloc->nomDisque, 1, longueur, fichier) != longueur)
+     RETOURNE_ERREUR(SauvegarderSF,-1,"ecriture de la longueur loupé\n",)
+     struct sListeInodesElement *current = sf->listeInodes.premier->suivant;
+
+     for (int i = 0; i < nbInodes; i++) {
+         if(SauvegarderInode(current->inode, fichier) != 0)
+         RETOURNE_ERREUR(SauvegarderSF,-1,"échec SauvegarderInode\n",fclose(fichier);)
+         current = current->suivant;
+     }
+     fclose(fichier);
+     return 0;
+ }
 
 /* V3
  * Restaure le contenu d'un système de fichiers depuis un fichier sauvegarde (sur disque).
  * Entrées : le système de fichiers où restaurer, le nom du fichier sauvegarde (sur disque)
  * Sortie : 0 en cas de succèe, -1 en cas d'erreur
  */
-int ChargerSF(tSF *pSF, char nomFichier[]) {
-  // A COMPLETER
-}
+ int ChargerSF(tSF *pSF, char *nomFichier) {
+     FILE *fichier = fopen(nomFichier, "rb");
+     TEST_EXISTANCE(fichier,"ChargerSF","L'ouverture du fichier à loupé",-1)
+     *pSF = CreerSF("temp");
+     int nbInodes;
+     size_t longueure;
+
+     if(fread(&nbInodes, sizeof(int), 1, fichier) != 1)
+     RETOURNE_ERREUR(ChargerSF,-1,"echec lecture nb d'inode\n",)
+
+     (*pSF)->listeInodes.nbInodes = nbInodes;
+     if(fread(&longueure, sizeof(size_t), 1, fichier) != 1)
+     RETOURNE_ERREUR(ChargerSF,-1, "echec lecture taille nom disque\n",)
+
+     if(fread((*pSF)->superBloc->nomDisque, 1, longueure, fichier) != longueure)
+     RETOURNE_ERREUR(ChargerSF,-1,"echec lecture taille nom disque\n",)
+
+     for (int i = 0; i < nbInodes; i++) {
+         tInode inode = AjouterInodeSF(*pSF, 0);
+         TEST_EXISTANCE(inode, "ChargerInode","l'allocation a échoué\n", -1)
+         if(ChargerInode(&inode, fichier) != 0)
+         RETOURNE_ERREUR(ChargerSF,-1,"échec ChargerInode pour inode",fprintf(stderr, "%d\n", i);)
+     }
+     fclose(fichier);
+     (*pSF)->superBloc->dateDerModif = time(NULL);
+     return 0;
+ }

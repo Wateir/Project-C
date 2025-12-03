@@ -3,7 +3,7 @@ CFLAGS=-Wall -Wpedantic -std=c11 -Wextra -g -Wextra -DDEBUG
 RM=rm -f
 DEPS= bloc.h inode.h
 OBJ= bloc.o inode.o gerer_sf_v3.o sf.o
-EXE=gerer_sf_v2
+EXE=gerer_sf_v3
 
 
 # Regenerer l'executable d'apres les dependances *.o
